@@ -2,7 +2,7 @@
 discord-py-slash-command
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Simple Discord Slash Command extension for discord.py
+Simple Discord Slash Command extension for disnake
 
 :copyright: (c) 2020-2021 eunwoo1104
 :license: MIT

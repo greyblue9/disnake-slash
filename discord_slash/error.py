@@ -3,7 +3,7 @@ class SlashCommandError(Exception):
     All exceptions of this extension can be captured with this.
 
     .. note::
-        discord.py doesn't trigger `on_command_error` event. Use this extension's `on_slash_command_error`.
+        disnake doesn't trigger `on_command_error` event. Use this extension's `on_slash_command_error`.
     """
 
 
@@ -13,7 +13,7 @@ class RequestFailure(SlashCommandError):
 
     .. note::
         Since release ``1.0.8``, this is only used at :mod:`.utils.manage_commands`. :class:`.http.SlashCommandRequest` uses
-        exception from discord.py such as :class:`discord.HTTPException`.
+        exception from disnake such as :class:`discord.HTTPException`.
 
     :ivar status: Status code of failed response.
     :ivar msg: Message of failed response.

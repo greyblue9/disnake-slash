@@ -8,7 +8,7 @@ setuptools.setup(
     version="1.0.9",
     author="eunwoo1104",
     author_email="sions04@naver.com",
-    description="Simple Discord Slash Command extension for discord.py.",
+    description="Simple Discord Slash Command extension for disnake.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/eunwoo1104/discord-py-slash-command",

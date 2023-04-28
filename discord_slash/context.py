@@ -1,8 +1,8 @@
 import typing
 import asyncio
-import discord
+import disnake
 from contextlib import suppress
-from discord.ext import commands
+from disnake.ext import commands
 from . import http
 from . import error
 from . import model
@@ -11,7 +11,7 @@ from . import model
 class SlashContext:
     """
     Context of the slash command.\n
-    Kinda similar with discord.ext.commands.Context.
+    Kinda similar with disnake.ext.commands.Context.
 
     .. warning::
         Do not manually init this model.
@@ -23,7 +23,7 @@ class SlashContext:
     :ivar interaction_id: Interaction ID of the command message.
     :ivar command_id: ID of the command.
     :ivar _http: :class:`.http.SlashCommandRequest` of the client.
-    :ivar bot: discord.py client.
+    :ivar bot: disnake client.
     :ivar logger: Logger instance.
     :ivar sent: Whether you sent the initial response.
     :ivar guild: :class:`discord.Guild` instance or guild ID of the command message.
@@ -34,7 +34,7 @@ class SlashContext:
     def __init__(self,
                  _http: http.SlashCommandRequest,
                  _json: dict,
-                 _discord: typing.Union[discord.Client, commands.Bot],
+                 _discord: typing.Union[disnake.Client, commands.Bot],
                  logger):
         self.__token = _json["token"]
         self.message = None # Should be set later.
@@ -47,10 +47,10 @@ class SlashContext:
         self.bot = _discord
         self.logger = logger
         self.sent = False
-        self.guild: typing.Union[discord.Guild, int] = _discord.get_guild(int(_json["guild_id"]))
-        self.author: typing.Union[discord.Member, int] = self.guild.get_member(int(_json["member"]["user"]["id"])) \
+        self.guild: typing.Union[disnake.Guild, int] = _discord.get_guild(int(_json["guild_id"]))
+        self.author: typing.Union[disnake.Member, int] = self.guild.get_member(int(_json["member"]["user"]["id"])) \
             if self.guild else None
-        self.channel: typing.Union[discord.TextChannel, int] = self.guild.get_channel(int(_json["channel_id"])) \
+        self.channel: typing.Union[disnake.TextChannel, int] = self.guild.get_channel(int(_json["channel_id"])) \
             if self.guild else None
         if not self.author:
             self.author = int(_json["member"]["user"]["id"])
@@ -75,7 +75,7 @@ class SlashContext:
         self.sent = True
         if not eat:
             with suppress(asyncio.TimeoutError):
-                def check(message: discord.Message):
+                def check(message: disnake.Message):
                     user_id = self.author if isinstance(self.author, int) else self.author.id
                     is_author = message.author.id == user_id
                     channel_id = self.channel if isinstance(self.channel, int) else self.channel.id
@@ -95,12 +95,12 @@ class SlashContext:
     async def send(self,
                    content: str = "", *,
                    wait: bool = False,
-                   embed: discord.Embed = None,
-                   embeds: typing.List[discord.Embed] = None,
+                   embed: disnake.Embed = None,
+                   embeds: typing.List[disnake.Embed] = None,
                    tts: bool = False,
-                   file: discord.File = None,
-                   files: typing.List[discord.File] = None,
-                   allowed_mentions: discord.AllowedMentions = None,
+                   file: disnake.File = None,
+                   files: typing.List[disnake.File] = None,
+                   allowed_mentions: disnake.AllowedMentions = None,
                    hidden: bool = False,
                    delete_after: float = None) -> model.SlashMessage:
         """
@@ -117,22 +117,22 @@ class SlashContext:
         :type content: str
         :param wait: Whether the server should wait before sending a response.
         :param embed: Embed of the response.
-        :type embed: discord.Embed
+        :type embed: disnake.Embed
         :param embeds: Embeds of the response. Maximum 10.
-        :type embeds: List[discord.Embed]
+        :type embeds: List[disnake.Embed]
         :param tts: Whether to speak message using tts. Default ``False``.
         :type tts: bool
         :param file: File to send.
-        :type file: discord.File
+        :type file: disnake.File
         :param files: Files to send.
-        :type files: List[discord.File]
+        :type files: List[disnake.File]
         :param allowed_mentions: AllowedMentions of the message.
-        :type allowed_mentions: discord.AllowedMentions
+        :type allowed_mentions: disnake.AllowedMentions
         :param hidden: Whether the message is hidden, which means message content will only be seen to the author.
         :type hidden: bool
         :param delete_after: If provided, the number of seconds to wait in the background before deleting the message we just sent. If the deletion fails, then it is silently ignored.
         :type delete_after: float
-        :return: Union[discord.Message, dict]
+        :return: Union[disnake.Message, dict]
         """
         if isinstance(content, int) and 2 <= content <= 5:
             raise error.IncorrectFormat("`.send` Method is rewritten at Release 1.0.9. Please read the docs and fix all the usages.")
@@ -168,7 +168,7 @@ class SlashContext:
         resp = await self._http.post(base, wait, self.interaction_id, self.__token, files=files)
         smsg = model.SlashMessage(state=self.bot._connection,
                                   data=resp,
-                                  channel=self.channel if isinstance(self.channel, discord.TextChannel) else discord.Object(id=self.channel),
+                                  channel=self.channel if isinstance(self.channel, disnake.TextChannel) else disnake.Object(id=self.channel),
                                   _http=self._http,
                                   interaction_token=self.__token)
         if delete_after:

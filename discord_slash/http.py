@@ -1,26 +1,26 @@
 import json
 import typing
 import aiohttp
-import discord
-from discord.http import Route
+import disnake
+from disnake.http import Route
 
 
 class CustomRoute(Route):
-    """discord.py's Route but changed ``BASE`` to use at slash command."""
+    """disnake's Route but changed ``BASE`` to use at slash command."""
     BASE = "https://discord.com/api/v8"
 
 
 class SlashCommandRequest:
     def __init__(self, logger, _discord):
         self.logger = logger
-        self._discord: typing.Union[discord.Client, discord.AutoShardedClient] = _discord
+        self._discord: typing.Union[disnake.Client, disnake.AutoShardedClient] = _discord
 
     def put_slash_commands(self, slash_commands: list, guild_id):
         """
         Sends a slash command put request to the Discord API
 
         ``slash_commands`` must contain all the commands
-        :param slash_commands: List of all the slash commands to make a put request to discord with.
+        :param slash_commands: List of all the slash commands to make a put request to disnake with.
         :param guild_id: ID of the guild to set the commands on. Pass `None` for the global scope.
         """
         return self.command_request(
@@ -65,12 +65,12 @@ class SlashCommandRequest:
 
     def command_request(self, method, guild_id, url_ending="", **kwargs):
         r"""
-        Sends a command request to discord (post, get, delete, etc)
+        Sends a command request to disnake (post, get, delete, etc)
 
         :param method: HTTP method.
         :param guild_id: ID of the guild to make the request on. `None` to make a request on the global scope.
         :param url_ending: String to append onto the end of the url.
-        :param \**kwargs: Kwargs to pass into discord.py's `request function <https://github.com/Rapptz/discord.py/blob/master/discord/http.py#L134>`_
+        :param \**kwargs: Kwargs to pass into disnake's `request function <https://github.com/Rapptz/disnake/blob/master/discord/http.py#L134>`_
         """
         url = f"/applications/{self._discord.user.id}"
         url += "/commands" if not guild_id else f"/guilds/{guild_id}/commands"
@@ -78,7 +78,7 @@ class SlashCommandRequest:
         route = CustomRoute(method, url)
         return self._discord.http.request(route, **kwargs)
 
-    def post(self, _resp, wait: bool, interaction_id, token, initial=False, files: typing.List[discord.File] = None):
+    def post(self, _resp, wait: bool, interaction_id, token, initial=False, files: typing.List[disnake.File] = None):
         """
         Sends command response POST request to Discord API.
 
@@ -90,7 +90,7 @@ class SlashCommandRequest:
         :param token: Command message token.
         :param initial: Whether this request is initial. Default ``False``
         :param files: Files to send. Default ``None``
-        :type files: List[discord.File]
+        :type files: List[disnake.File]
         :return: Coroutine
         """
         if files:
@@ -99,7 +99,7 @@ class SlashCommandRequest:
         route = CustomRoute("POST", req_url)
         return self._discord.http.request(route, json=_resp)
 
-    def post_with_files(self, _resp, wait: bool, files: typing.List[discord.File], token):
+    def post_with_files(self, _resp, wait: bool, files: typing.List[disnake.File], token):
         req_url = f"/webhooks/{self._discord.user.id}/{token}?wait={'true' if wait else 'false'}"
         route = CustomRoute("POST", req_url)
         form = aiohttp.FormData()

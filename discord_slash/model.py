@@ -1,5 +1,5 @@
 import asyncio
-import discord
+import disnake
 from enum import IntEnum
 from contextlib import suppress
 from inspect import iscoroutinefunction
@@ -30,8 +30,8 @@ class CommandObject:
         self.allowed_guild_ids = cmd["guild_ids"] or []
         self.options = cmd["api_options"] or []
         self.has_subcommands = cmd["has_subcommands"]
-        # Ref https://github.com/Rapptz/discord.py/blob/master/discord/ext/commands/core.py#L1447
-        # Since this isn't inherited from `discord.ext.commands.Command`, discord.py's check decorator will
+        # Ref https://github.com/Rapptz/disnake/blob/master/discord/ext/commands/core.py#L1447
+        # Since this isn't inherited from `discord.ext.commands.Command`, disnake's check decorator will
         # add checks at this var.
         self.__commands_checks__ = []
 
@@ -179,13 +179,13 @@ class SlashCommandOptionType(IntEnum):
         if issubclass(t, bool): return cls.BOOLEAN
         # The check for bool MUST be above the check for integers as booleans subclass integers
         if issubclass(t, int): return cls.INTEGER
-        if issubclass(t, discord.abc.User): return cls.USER
-        if issubclass(t, discord.abc.GuildChannel): return cls.CHANNEL
-        if issubclass(t, discord.abc.Role): return cls.ROLE
+        if issubclass(t, disnake.abc.User): return cls.USER
+        if issubclass(t, disnake.abc.GuildChannel): return cls.CHANNEL
+        if issubclass(t, disnake.abc.Role): return cls.ROLE
 
 
-class SlashMessage(discord.Message):
-    """discord.py's :class:`discord.Message` but overridden ``edit`` and ``delete`` to work for slash command."""
+class SlashMessage(disnake.Message):
+    """disnake's :class:`discord.Message` but overridden ``edit`` and ``delete`` to work for slash command."""
     def __init__(self, *, state, channel, data, _http: http.SlashCommandRequest, interaction_token):
         # Yes I know it isn't the best way but this makes implementation simple.
         super().__init__(state=state, channel=channel, data=data)
@@ -196,7 +196,7 @@ class SlashMessage(discord.Message):
         """Refer :meth:`discord.Message.edit`."""
         try:
             await super().edit(**fields)
-        except discord.Forbidden:
+        except disnake.Forbidden:
             _resp = {}
 
             content = str(fields.get("content"))
@@ -230,12 +230,12 @@ class SlashMessage(discord.Message):
         """Refer :meth:`discord.Message.delete`."""
         try:
             await super().delete(delay=delay)
-        except discord.Forbidden:
+        except disnake.Forbidden:
             if not delay:
                 return await self._http.delete(self.__interaction_token, self.id)
 
             async def wrap():
-                with suppress(discord.HTTPException):
+                with suppress(disnake.HTTPException):
                     await asyncio.sleep(delay)
                     await self._http.delete(self.__interaction_token, self.id)
             self._state.loop.create_task(wrap())

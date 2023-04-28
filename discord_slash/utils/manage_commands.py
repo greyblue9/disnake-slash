@@ -174,7 +174,7 @@ def create_option(name: str,
 def generate_options(function: Callable, description: str = "No description.") -> list:
     """
     Generates a list of options from the type hints of a command.
-    You currently can type hint: str, int, bool, discord.User, discord.Channel, discord.Role
+    You currently can type hint: str, int, bool, disnake.User, disnake.Channel, disnake.Role
 
     .. warning::
         This is automatically used if you do not pass any options directly. It is not recommended to use this.

@@ -1,8 +1,8 @@
 import logging
 import typing
-import discord
+import disnake
 from inspect import iscoroutinefunction, getdoc
-from discord.ext import commands
+from disnake.ext import commands
 from . import http
 from . import model
 from . import error
@@ -14,8 +14,8 @@ class SlashCommand:
     """
     Slash command extension class.
 
-    :param client: discord.py Client or Bot instance.
-    :type client: Union[discord.Client, discord.ext.commands.Bot]
+    :param client: disnake Client or Bot instance.
+    :type client: Union[disnake.Client, disnake.ext.commands.Bot]
     :param auto_register: Whether to register commands automatically. Default `False`.
     :type auto_register: bool
     :param override_type: Whether to override checking type of the client and try register event.
@@ -27,11 +27,11 @@ class SlashCommand:
     :ivar logger: Logger of this client.
     :ivar auto_register: Whether to register commands automatically.
     :ivar auto_delete: Whether to delete commands not found in the project automatically.
-    :ivar has_listener: Whether discord client has listener add function.
+    :ivar has_listener: Whether disnake client has listener add function.
     """
 
     def __init__(self,
-                 client: typing.Union[discord.Client, commands.Bot],
+                 client: typing.Union[disnake.Client, commands.Bot],
                  auto_register: bool = False,
                  auto_delete: bool = False,
                  override_type: bool = False):
@@ -52,7 +52,7 @@ class SlashCommand:
         
         if not isinstance(client, commands.Bot) and not isinstance(client,
                                                                    commands.AutoShardedBot) and not override_type:
-            self.logger.info("Detected discord.Client! Overriding on_socket_response.")
+            self.logger.info("Detected disnake.Client! Overriding on_socket_response.")
             self._discord.on_socket_response = self.on_socket_response
             self.has_listener = False
         else:
@@ -87,7 +87,7 @@ class SlashCommand:
             Since version ``1.0.9``, this gets called automatically during cog initialization.
 
         :param cog: Cog that has slash commands.
-        :type cog: discord.ext.commands.Cog
+        :type cog: disnake.ext.commands.Cog
         """
         if hasattr(cog, '_slash_registered'): # Temporary warning
             return self.logger.warning("Calling get_cog_commands is no longer required "
@@ -138,7 +138,7 @@ class SlashCommand:
             Since version ``1.0.9``, this gets called automatically during cog de-initialization.
 
         :param cog: Cog that has slash commands.
-        :type cog: discord.ext.commands.Cog
+        :type cog: disnake.ext.commands.Cog
         """
         if hasattr(cog, '_slash_registered'):
             del cog._slash_registered
@@ -184,7 +184,7 @@ class SlashCommand:
                 }
             }
 
-        Commands are in the format specified by discord `here <https://discord.com/developers/docs/interactions/slash-commands#applicationcommand>`_
+        Commands are in the format specified by disnake `here <https://discord.com/developers/docs/interactions/slash-commands#applicationcommand>`_
         """
         await self._discord.wait_until_ready()  # In case commands are still not registered to SlashCommand.
         commands = {
@@ -262,7 +262,7 @@ class SlashCommand:
         self.logger.info("Syncing commands...")
         all_bot_guilds = [guild.id for guild in self._discord.guilds]
         # This is an extremly bad way to do this, because slash cmds can be in guilds the bot isn't in
-        # But it's the only way until discord makes an endpoint to request all the guild with cmds registered.
+        # But it's the only way until disnake makes an endpoint to request all the guild with cmds registered.
 
         await self.req.put_slash_commands(slash_commands = commands["global"], guild_id = None)
         
@@ -313,7 +313,7 @@ class SlashCommand:
             # Since we can only get commands per guild we need to loop through every one
             try:
                 guild_commands = await self.req.get_all_commands(guild.id)
-            except discord.Forbidden:
+            except disnake.Forbidden:
                 # In case a guild has not granted permissions to access commands
                 continue
 
@@ -496,7 +496,7 @@ class SlashCommand:
             Also, if ``options`` is passed, then ``auto_convert`` will be automatically created or overrided.
 
         .. warning::
-            Unlike discord.py's command, ``*args``, keyword-only args, converters, etc. are NOT supported.
+            Unlike disnake's command, ``*args``, keyword-only args, converters, etc. are NOT supported.
 
         Example:
 
@@ -558,7 +558,7 @@ class SlashCommand:
                    options: typing.List[dict] = None):
         """
         Decorator that registers subcommand.\n
-        Unlike discord.py, you don't need base command.\n
+        Unlike disnake, you don't need base command.\n
         All args must be passed as keyword-args.
 
         Example:
@@ -608,12 +608,12 @@ class SlashCommand:
 
         return wrapper
 
-    async def process_options(self, guild: discord.Guild, options: list, auto_convert: dict) -> list:
+    async def process_options(self, guild: disnake.Guild, options: list, auto_convert: dict) -> list:
         """
-        Processes Role, User, and Channel option types to discord.py's models.
+        Processes Role, User, and Channel option types to disnake's models.
 
         :param guild: Guild of the command message.
-        :type guild: discord.Guild
+        :type guild: disnake.Guild
         :param options: Dict of options.
         :type options: list
         :param auto_convert: Dictionary of how to convert option values.
@@ -624,7 +624,7 @@ class SlashCommand:
             self.logger.info("This command invoke is missing guild. Skipping option process.")
             return [x["value"] for x in options]
 
-        if not isinstance(guild, discord.Guild):
+        if not isinstance(guild, disnake.Guild):
             return [x["value"] for x in options]
 
         if not auto_convert:
@@ -673,7 +673,7 @@ class SlashCommand:
                     to_return.append(await loaded_converter(int(selected["value"]))) \
                         if iscoroutinefunction(loaded_converter) else \
                         to_return.append(loaded_converter(int(selected["value"])))
-                except (discord.Forbidden, discord.HTTPException):
+                except (disnake.Forbidden, disnake.HTTPException):
                     self.logger.warning("Failed fetching user! Passing ID instead.")
                     to_return.append(int(selected["value"]))
         return to_return
@@ -703,7 +703,7 @@ class SlashCommand:
             selected_cmd = self.commands[to_use["data"]["name"]]
 
             if selected_cmd.allowed_guild_ids:
-                guild_id = ctx.guild.id if isinstance(ctx.guild, discord.Guild) else ctx.guild
+                guild_id = ctx.guild.id if isinstance(ctx.guild, disnake.Guild) else ctx.guild
 
                 if guild_id not in selected_cmd.allowed_guild_ids:
                     return
