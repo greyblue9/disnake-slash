@@ -125,9 +125,9 @@ class SlashCommand:
                     if x.name in self.subcommands[x.base][x.subcommand_group]:
                         raise error.DuplicateCommand(f"{x.base} {x.subcommand_group} {x.name}")
                     self.subcommands[x.base][x.subcommand_group][x.name] = x
+                elif x.name in self.subcommands[x.base]:
+                    raise error.DuplicateCommand(f"{x.base} {x.name}")
                 else:
-                    if x.name in self.subcommands[x.base]:
-                        raise error.DuplicateCommand(f"{x.base} {x.name}")
                     self.subcommands[x.base][x.name] = x
 
     def remove_cog_commands(self, cog):
@@ -199,7 +199,7 @@ class SlashCommand:
                 # so we will warn this at registering subcommands.
                 self.logger.warning(f"Detected command name with same subcommand base name! "
                                     f"This command will only have subcommand: {x}")
-            
+
             options = []
             if selected.has_subcommands:
                 tgt = self.subcommands[x]
@@ -236,7 +236,7 @@ class SlashCommand:
             command_dict = {
                 "name": x,
                 "description": selected.description or "No Description.",
-                "options": selected.options if not options else options
+                "options": options if options else selected.options,
             }
             if selected.allowed_guild_ids:
                 for y in selected.allowed_guild_ids:
@@ -303,12 +303,12 @@ class SlashCommand:
         """
         await self._discord.wait_until_ready()
         self.logger.info("Deleting unused commands...")
-        registered_commands = {}
         global_commands = await self.req.get_all_commands(None)
 
-        for cmd in global_commands:
-            registered_commands[cmd["name"]] = {"id": cmd["id"], "guild_id": None}
-
+        registered_commands = {
+            cmd["name"]: {"id": cmd["id"], "guild_id": None}
+            for cmd in global_commands
+        }
         for guild in self._discord.guilds:
             # Since we can only get commands per guild we need to loop through every one
             try:
@@ -320,10 +320,8 @@ class SlashCommand:
             for cmd in guild_commands:
                 registered_commands[cmd["name"]] = {"id": cmd["id"], "guild_id": guild.id}
 
-        for x in registered_commands:
+        for x, selected in registered_commands.items():
             if x not in self.commands:
-                # Delete command if not found locally
-                selected = registered_commands[x]
                 await self.req.remove_slash_command(selected["guild_id"], selected["id"])
 
         self.logger.info("Completed deleting unused commands!")
@@ -470,9 +468,9 @@ class SlashCommand:
             if name in self.subcommands[base][subcommand_group]:
                 raise error.DuplicateCommand(f"{base} {subcommand_group} {name}")
             self.subcommands[base][subcommand_group][name] = model.SubcommandObject(_sub, base, name, subcommand_group)
+        elif name in self.subcommands[base]:
+            raise error.DuplicateCommand(f"{base} {name}")
         else:
-            if name in self.subcommands[base]:
-                raise error.DuplicateCommand(f"{base} {name}")
             self.subcommands[base][name] = model.SubcommandObject(_sub, base, name)
         self.logger.debug(f"Added subcommand `{base} {subcommand_group or ''} {name or cmd.__name__}`")
 
@@ -664,15 +662,14 @@ class SlashCommand:
                     continue
                 loaded_converter = converters[types[auto_convert[selected["name"]]]]
                 if isinstance(loaded_converter, list):
-                    cache_first = loaded_converter[0](int(selected["value"]))
-                    if cache_first:
+                    if cache_first := loaded_converter[0](int(selected["value"])):
                         to_return.append(cache_first)
                         continue
                     loaded_converter = loaded_converter[1]
                 try:
                     to_return.append(await loaded_converter(int(selected["value"]))) \
-                        if iscoroutinefunction(loaded_converter) else \
-                        to_return.append(loaded_converter(int(selected["value"])))
+                            if iscoroutinefunction(loaded_converter) else \
+                            to_return.append(loaded_converter(int(selected["value"])))
                 except (discord.Forbidden, discord.HTTPException):
                     self.logger.warning("Failed fetching user! Passing ID instead.")
                     to_return.append(int(selected["value"]))
@@ -795,10 +792,11 @@ class SlashCommand:
         :type ex: Exception
         :return:
         """
-        if self.has_listener:
-            if self._discord.extra_events.get('on_slash_command_error'):
-                self._discord.dispatch("slash_command_error", ctx, ex)
-                return
+        if self.has_listener and self._discord.extra_events.get(
+            'on_slash_command_error'
+        ):
+            self._discord.dispatch("slash_command_error", ctx, ex)
+            return
         if hasattr(self._discord, "on_slash_command_error"):
             self._discord.dispatch("slash_command_error", ctx, ex)
             return
