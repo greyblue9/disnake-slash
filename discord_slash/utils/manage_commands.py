@@ -26,7 +26,7 @@ async def add_slash_command(bot_id,
     :raises: :class:`.error.RequestFailure` - Requesting to Discord API has failed.
     """
     url = f"https://discord.com/api/v8/applications/{bot_id}"
-    url += "/commands" if not guild_id else f"/guilds/{guild_id}/commands"
+    url += f"/guilds/{guild_id}/commands" if guild_id else "/commands"
     base = {
         "name": cmd_name,
         "description": description,
@@ -59,7 +59,7 @@ async def remove_slash_command(bot_id,
     :raises: :class:`.error.RequestFailure` - Requesting to Discord API has failed.
     """
     url = f"https://discord.com/api/v8/applications/{bot_id}"
-    url += "/commands" if not guild_id else f"/guilds/{guild_id}/commands"
+    url += f"/guilds/{guild_id}/commands" if guild_id else "/commands"
     url += f"/{cmd_id}"
     async with aiohttp.ClientSession() as session:
         async with session.delete(url, headers={"Authorization": f"Bot {bot_token}"}) as resp:
@@ -85,7 +85,7 @@ async def get_all_commands(bot_id,
     :raises: :class:`.error.RequestFailure` - Requesting to Discord API has failed.
     """
     url = f"https://discord.com/api/v8/applications/{bot_id}"
-    url += "/commands" if not guild_id else f"/guilds/{guild_id}/commands"
+    url += f"/guilds/{guild_id}/commands" if guild_id else "/commands"
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers={"Authorization": f"Bot {bot_token}"}) as resp:
             if resp.status == 429:
@@ -195,11 +195,9 @@ def generate_options(function: Callable, description: str = "No description.") -
             param = param.replace(annotation=eval(param.annotation, function.__globals__))
 
         if getattr(param.annotation, "__origin__", None) is typing.Union:
-            # Make a command argument optional with typing.Optional[type] or typing.Union[type, None]
-            args = getattr(param.annotation, "__args__", None)
-            if args:
+            if args := getattr(param.annotation, "__args__", None):
                 param = param.replace(annotation=args[0])
-                required = not args[-1] is type(None)
+                required = args[-1] is not type(None)
 
         option_type = SlashCommandOptionType.from_type(param.annotation) or SlashCommandOptionType.STRING
         options.append(create_option(param.name, description or "No Description.", option_type, required))

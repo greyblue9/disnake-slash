@@ -76,7 +76,10 @@ class CommandObject:
         :type ctx: .context.SlashContext
         :return: bool
         """
-        res = [bool(x(ctx)) if not iscoroutinefunction(x) else bool(await x(ctx)) for x in self.__commands_checks__]
+        res = [
+            bool(await x(ctx)) if iscoroutinefunction(x) else bool(x(ctx))
+            for x in self.__commands_checks__
+        ]
         return False not in res
 
 
@@ -199,9 +202,8 @@ class SlashMessage(discord.Message):
         except discord.Forbidden:
             _resp = {}
 
-            content = str(fields.get("content"))
-            if content:
-                _resp["content"] = str(content)
+            if content := str(fields.get("content")):
+                _resp["content"] = content
 
             embed = fields.get("embed")
             embeds = fields.get("embeds")
@@ -218,12 +220,11 @@ class SlashMessage(discord.Message):
 
             allowed_mentions = fields.get("allowed_mentions")
             _resp["allowed_mentions"] = allowed_mentions.to_dict() if allowed_mentions else \
-                self._state.allowed_mentions.to_dict() if self._state.allowed_mentions else {}
+                    self._state.allowed_mentions.to_dict() if self._state.allowed_mentions else {}
 
             await self._http.edit(_resp, self.__interaction_token, self.id)
 
-            delete_after = fields.get("delete_after")
-            if delete_after:
+            if delete_after := fields.get("delete_after"):
                 await self.delete(delay=delete_after)
 
     async def delete(self, *, delay=None):
